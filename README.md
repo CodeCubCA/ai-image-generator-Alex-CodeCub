@@ -1,3 +1,14 @@
+---
+title: AI Image Generator
+emoji: 🎨
+colorFrom: purple
+colorTo: blue
+sdk: streamlit
+sdk_version: 1.40.0
+app_file: app.py
+pinned: false
+---
+
 # AI Image Generator
 
 A web-based AI image generator powered by HuggingFace's FLUX.1-schnell model and built with Streamlit.
