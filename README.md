@@ -8,6 +8,8 @@ A web-based AI image generator powered by HuggingFace's FLUX.1-schnell model and
 
 - Generate stunning images from text descriptions
 - Fast image generation using FLUX.1-schnell model
+- **Style Presets** - 7 artistic styles: Anime, Realistic, Digital Art, Watercolor, Oil Painting, Cyberpunk, and Fantasy
+- **Image History Gallery** - View and manage up to 10 previously generated images
 - Clean and intuitive user interface
 - Download generated images
 - Comprehensive error handling
@@ -67,12 +69,27 @@ streamlit run app.py
 - "A cute cat wearing a wizard hat, digital art, detailed"
 - "Mountain landscape with aurora borealis, photorealistic"
 
+## Style Presets
+
+Choose from 7 built-in style presets to enhance your prompts:
+
+| Style | Description |
+|-------|-------------|
+| None | Use your original prompt as-is |
+| Anime | Studio Ghibli inspired, vibrant colors |
+| Realistic | Photorealistic, 8K resolution |
+| Digital Art | Artstation trending, concept art |
+| Watercolor | Soft colors, delicate brushstrokes |
+| Oil Painting | Classical art, textured canvas |
+| Cyberpunk | Neon lights, futuristic sci-fi |
+| Fantasy | Magical, enchanted, epic scenes |
+
 ## Tips for Better Results
 
 - Be specific and descriptive in your prompts
-- Include style, mood, and details
+- Use style presets for consistent artistic results
+- Include mood and atmosphere details
 - Mention lighting and colors
-- Specify the desired art style (e.g., oil painting, digital art, photorealistic)
 
 ## Project Structure
 

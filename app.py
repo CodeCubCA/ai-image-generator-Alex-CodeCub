@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+from datetime import datetime
 from dotenv import load_dotenv
 from PIL import Image
 from io import BytesIO
@@ -11,6 +12,18 @@ load_dotenv()
 # Configuration
 HUGGINGFACE_TOKEN = os.getenv("HUGGINGFACE_TOKEN")
 MODEL_NAME = "black-forest-labs/FLUX.1-schnell"
+
+# Style presets
+STYLE_PRESETS = {
+    "None": "",
+    "Anime": ", anime style, vibrant colors, Studio Ghibli inspired, detailed illustration",
+    "Realistic": ", photorealistic, highly detailed, 8K resolution, professional photography",
+    "Digital Art": ", digital painting, artstation trending, concept art, highly detailed",
+    "Watercolor": ", watercolor painting, soft colors, artistic, delicate brushstrokes",
+    "Oil Painting": ", oil painting, classical art style, textured canvas, rich colors",
+    "Cyberpunk": ", cyberpunk style, neon lights, futuristic, sci-fi, dark atmosphere",
+    "Fantasy": ", fantasy art, magical, enchanted, epic scene, mystical atmosphere",
+}
 
 # Initialize InferenceClient
 client = InferenceClient(token=HUGGINGFACE_TOKEN)
@@ -52,6 +65,10 @@ def generate_image(prompt):
         return None
 
 def main():
+    # Initialize session state for image history
+    if 'image_history' not in st.session_state:
+        st.session_state.image_history = []
+
     # Header
     st.title("🎨 AI Image Generator")
     st.markdown("Generate stunning images from text using AI powered by FLUX.1-schnell")
@@ -69,6 +86,20 @@ def main():
 
     # Sidebar with information
     with st.sidebar:
+        st.header("🎨 Style Preset")
+        selected_style = st.selectbox(
+            "Choose a style:",
+            options=list(STYLE_PRESETS.keys()),
+            index=0,
+            help="Select a style to automatically enhance your prompt"
+        )
+
+        # Show what the style adds
+        if selected_style != "None":
+            st.info(f"**Style adds:** {STYLE_PRESETS[selected_style]}")
+
+        st.markdown("---")
+
         st.header("ℹ️ About")
         st.write(f"**Model:** {MODEL_NAME}")
         st.write("FLUX.1-schnell is a fast, high-quality image generation model by Black Forest Labs.")
@@ -79,15 +110,15 @@ def main():
         st.write("- Be specific and descriptive")
         st.write("- Include style, mood, and details")
         st.write("- Mention lighting and colors")
-        st.write("- Specify art style if desired")
+        st.write("- Or use a style preset above!")
 
         st.markdown("---")
 
         st.header("📝 Example Prompts")
-        st.code("A serene lake at sunset, oil painting style, warm colors")
-        st.code("A futuristic city at night, cyberpunk style, neon lights")
-        st.code("A cute cat wearing a wizard hat, digital art, detailed")
-        st.code("Mountain landscape with aurora borealis, photorealistic")
+        st.code("A serene lake at sunset")
+        st.code("A futuristic city at night")
+        st.code("A cute cat wearing a wizard hat")
+        st.code("Mountain landscape with aurora borealis")
 
         st.markdown("---")
 
@@ -114,14 +145,38 @@ def main():
         if not prompt.strip():
             st.warning("⚠️ Please enter a description for your image.")
         else:
+            # Combine prompt with style
+            style_suffix = STYLE_PRESETS[selected_style]
+            enhanced_prompt = prompt.strip() + style_suffix
+
+            # Show the enhanced prompt if a style is applied
+            if selected_style != "None":
+                with st.expander("🔍 View Enhanced Prompt", expanded=False):
+                    st.code(enhanced_prompt)
+
             with st.spinner("🎨 Creating your image... This may take 10-30 seconds..."):
-                image = generate_image(prompt)
+                image = generate_image(enhanced_prompt)
 
                 if image:
                     st.success("✅ Image generated successfully!")
 
+                    # Save to history
+                    image_data = {
+                        'image': image,
+                        'prompt': prompt.strip(),
+                        'enhanced_prompt': enhanced_prompt,
+                        'style': selected_style,
+                        'timestamp': datetime.now()
+                    }
+                    st.session_state.image_history.insert(0, image_data)
+
+                    # Limit to 10 images
+                    if len(st.session_state.image_history) > 10:
+                        st.session_state.image_history = st.session_state.image_history[:10]
+
                     # Display the generated image
-                    st.image(image, caption=f"Generated: {prompt}", use_container_width=True)
+                    caption = f"{prompt}" if selected_style == "None" else f"{prompt} ({selected_style} style)"
+                    st.image(image, caption=caption, use_container_width=True)
 
                     # Download button
                     buf = BytesIO()
@@ -137,6 +192,49 @@ def main():
                             mime="image/png",
                             use_container_width=True
                         )
+
+    # Image History Gallery
+    if st.session_state.image_history:
+        st.markdown("---")
+        st.header(f"🖼️ Image History ({len(st.session_state.image_history)}/10)")
+
+        # Clear history button
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col3:
+            if st.button("🗑️ Clear History", use_container_width=True):
+                st.session_state.image_history = []
+                st.rerun()
+
+        # Display images in a grid (3 columns)
+        cols = st.columns(3)
+        for idx, img_data in enumerate(st.session_state.image_history):
+            with cols[idx % 3]:
+                # Display image
+                st.image(img_data['image'], use_container_width=True)
+
+                # Show style badge
+                style_text = f"**{img_data['style']}**" if img_data['style'] != "None" else "No style"
+                st.caption(style_text)
+
+                # Show prompt in expander
+                with st.expander("View prompt", expanded=False):
+                    st.write(img_data['prompt'])
+                    if img_data['style'] != "None":
+                        st.caption(f"Enhanced: {img_data['enhanced_prompt']}")
+
+                # Download button for each image
+                buf = BytesIO()
+                img_data['image'].save(buf, format="PNG")
+                byte_im = buf.getvalue()
+
+                st.download_button(
+                    label="⬇️ Download",
+                    data=byte_im,
+                    file_name=f"ai_generated_{img_data['prompt'][:20].replace(' ', '_')}_{idx}.png",
+                    mime="image/png",
+                    use_container_width=True,
+                    key=f"download_{idx}"
+                )
 
     # Footer
     st.markdown("---")
